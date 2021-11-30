@@ -12,13 +12,14 @@ var (
 	joy_felt_total{developer="me"} 9000
 `
 )
+
 // newTestHTTPServer is a functional (if not small) HTTP Server used to unit test scraping needs.
 func newTestHTTPServer(t *testing.T) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		var s string
 		var rH int
 
-		switch r.URL.String(){
+		switch r.URL.String() {
 		case "/happy_path":
 			rH = http.StatusOK
 			s = happyRes
@@ -30,7 +31,7 @@ func newTestHTTPServer(t *testing.T) *httptest.Server {
 			t.Logf("flappy attempt %s", retryAttempt)
 			if retryAttempt == "0" {
 				rH = http.StatusServiceUnavailable
-				s = ""	
+				s = ""
 			} else {
 				rH = http.StatusOK
 				s = happyRes

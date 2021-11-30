@@ -11,13 +11,11 @@ import (
 	"github.com/ful09003/tinderbox/pkg/types"
 )
 
-type TinderboxHTTPFn func(string, *types.TinderboxHTTPOptions, http.Client)
-
 // Scrape accepts a 'target' string, TinderboxHTTPOptions struct, and HTTP Client.
 // Scrape returns the associated raw bytes discovered from scraping a (presumably) OpenMetrics-format endpoint
 func Scrape(target string, o *types.TinderboxHTTPOptions, c http.Client) ([]byte, error) {
 	req, err := o.ToRequest(target)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 

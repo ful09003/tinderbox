@@ -6,19 +6,19 @@ import (
 )
 
 type TinderboxHTTPOptions struct {
-	retries int // Max retries for an HTTP request
-	backoffDelay int // Delay (in seconds) to backoff on each retry
-	target string // Target for an HTTP request
-	headers http.Header // Headers for an HTTP request
+	retries      int         // Max retries for an HTTP request
+	backoffDelay int         // Delay (in seconds) to backoff on each retry
+	target       string      // Target for an HTTP request
+	headers      http.Header // Headers for an HTTP request
 }
 
 // NewTinderboxHTTPOptions returns an empty instance of TinderboxHTTPOptions
 func NewTinderboxHTTPOptions() *TinderboxHTTPOptions {
 	return &TinderboxHTTPOptions{
-		retries: 3,
+		retries:      3,
 		backoffDelay: 1,
-		target: "",
-		headers: http.Header{},
+		target:       "",
+		headers:      http.Header{},
 	}
 }
 
@@ -54,7 +54,7 @@ func (h *TinderboxHTTPOptions) ToRequest(url string) (*http.Request, error) {
 
 	return &http.Request{
 		Method: http.MethodGet,
-		URL: pURL,
+		URL:    pURL,
 		Header: h.headers,
 	}, nil
 }
