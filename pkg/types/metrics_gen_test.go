@@ -53,6 +53,7 @@ func TestMetricsGenerator_GetAlignment(t *testing.T) {
 func TestMetricsGenerator_WithStepDuration(t *testing.T) {
 	type fields struct {
 		alignment GeneratorType
+		job, instance string
 		seedData  []*dto.MetricFamily
 		out       io.Writer
 	}
@@ -72,6 +73,8 @@ func TestMetricsGenerator_WithStepDuration(t *testing.T) {
 				out:       nil,
 				alignment: Chaotic,
 				seedData:  []*dto.MetricFamily{},
+				job: "testj",
+				instance: "testi",
 			},
 			args: args{
 				t: 5 * time.Minute,
@@ -83,12 +86,14 @@ func TestMetricsGenerator_WithStepDuration(t *testing.T) {
 				seedData:        []*dto.MetricFamily{},
 				stepMaxVariance: 0,
 				out:             nil,
+				instanceName: "testi",
+				jobName: "testj",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := NewGenerator(tt.fields.out, tt.fields.alignment, tt.fields.seedData).WithStepDuration(tt.args.t); !reflect.DeepEqual(got.stepDuration, tt.want.stepDuration) {
+			if got := NewGenerator(tt.fields.out, tt.fields.alignment, tt.fields.job, tt.fields.instance, tt.fields.seedData).WithStepDuration(tt.args.t); !reflect.DeepEqual(got.stepDuration, tt.want.stepDuration) {
 				t.Errorf("MetricsGenerator.WithStepDuration() = %v, want %v", got, tt.want)
 			}
 		})

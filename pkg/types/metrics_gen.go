@@ -14,11 +14,6 @@ import (
 // GeneratorAlignmentFn is a function type which is capable of yielding a Prometheus MetricFamily for each step (time.Duration) between a start and end time.Time
 type GeneratorAlignmentFn func(<-chan struct{}, *dto.MetricFamily, time.Time, time.Time, time.Duration, *MetricsGenerator) <-chan *dto.MetricFamily
 
-type GeneratorJob struct {
-	FamData *dto.MetricFamily
-	GenType GeneratorType
-}
-
 type GeneratorType int
 
 func (g GeneratorType) String() string {
@@ -43,6 +38,8 @@ const (
 // MetricsGenerator is a coordinating structure for generating "fake" OpenMetrics datasets.
 type MetricsGenerator struct {
 	alignment       GeneratorType       // alignment represents this generator's treatment of values
+	instanceName string // Faked instance name
+	jobName string // Faked job name
 	stepDuration    time.Duration       // stepDuration represents the interval between generated scrape times (e.g. 1 minute, 5 minutes, etc.)
 	seedData        []*dto.MetricFamily // seedData represents the base data (ideally, via a live scrape) this generator uses
 	stepMaxVariance float64             // stepMaxVariance represents how the upper bound a given metric should change per interval
@@ -70,11 +67,13 @@ func (m *MetricsGenerator) WithGaugeVariance(f float64) *MetricsGenerator {
 }
 
 // NewGenerator returns a bare-bones metrics generator.
-func NewGenerator(o io.Writer, genType GeneratorType, seed []*dto.MetricFamily) *MetricsGenerator {
+func NewGenerator(o io.Writer, genType GeneratorType, targetName, jobName string, seed []*dto.MetricFamily) *MetricsGenerator {
 	retGen := &MetricsGenerator{
 		out:       o,
 		alignment: genType,
 		seedData:  seed,
+		instanceName: targetName,
+		jobName: jobName,
 	}
 	switch retGen.alignment {
 	case Repeatable:
@@ -145,7 +144,7 @@ func yieldFams(f []*dto.MetricFamily) <-chan *dto.MetricFamily {
 }
 
 // chaoticMetricValues adjusts each gauge metric in a family to be +/- some input value per step, based on a 0.0 - 1.0 probability of change
-func chaoticMetricValues(done <-chan struct{}, in *dto.MetricFamily, epoch, end time.Time, step time.Duration, m *MetricsGenerator) <-chan *dto.MetricFamily {
+func chaoticMetricValues(done <-chan struct{}, in *dto.MetricFamily, epoch, end time.Time, step time.Duration, g *MetricsGenerator) <-chan *dto.MetricFamily {
 	out := make(chan *dto.MetricFamily)
 
 	go func() {
@@ -163,14 +162,14 @@ func chaoticMetricValues(done <-chan struct{}, in *dto.MetricFamily, epoch, end 
 					Name:   in.Name,
 					Help:   in.Help,
 					Type:   in.Type,
-					Metric: modifyMetrics(in.Metric, nTime),
+					Metric: modifyMetrics(in.Metric, nTime, g),
 				}
 			} else {
 				out <- &dto.MetricFamily{
 					Name:   in.Name,
 					Help:   in.Help,
 					Type:   in.Type,
-					Metric: adjustVals(modifyMetrics(in.Metric, nTime), m.stepMaxVariance, 0.9),
+					Metric: adjustVals(modifyMetrics(in.Metric, nTime, g), g.stepMaxVariance, 0.9),
 				}
 			}
 		}
@@ -219,7 +218,7 @@ func repeatMetricFam(done <-chan struct{}, in *dto.MetricFamily, epoch, end time
 				Name:   in.Name,
 				Help:   in.Help,
 				Type:   in.Type,
-				Metric: modifyMetrics(in.Metric, nTime),
+				Metric: modifyMetrics(in.Metric, nTime, g),
 			}
 		}
 	}()
@@ -229,12 +228,12 @@ func repeatMetricFam(done <-chan struct{}, in *dto.MetricFamily, epoch, end time
 
 // modifyMetrics makes a set of established changes to an input slice of Metrics.
 // TODO(mfuller): think about how to improve this. See the weird ducttape for chaotic metrics where we are chaning functions as a prime example.
-func modifyMetrics(in []*dto.Metric, t time.Time) []*dto.Metric {
+func modifyMetrics(in []*dto.Metric, t time.Time, m *MetricsGenerator) []*dto.Metric {
 	r := make([]*dto.Metric, 0)
 
 	for _, metric := range in {
 		r1 := setTimestamp(metric, t)
-		r1 = setReqdLabels(&r1, "testjob", "testinstance:7777")
+		r1 = setReqdLabels(&r1, m.jobName, m.instanceName)
 		r = append(r, &r1)
 	}
 

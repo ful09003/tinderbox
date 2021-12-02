@@ -1487,11 +1487,16 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+var (
+	instance = "http://localhost:9100/metrics"
+	jobName = "demojob"
+)
+
 func main() {
 	done := make(chan struct{})
 	defer close(done)
 
-	job := scrape.NewScrapeJob("http://localhost:9100/metrics", types.NewTinderboxHTTPOptions())
+	job := scrape.NewScrapeJob(instance, types.NewTinderboxHTTPOptions())
 
 	allFams := make([]*dto.MetricFamily, 0)
 
@@ -1504,7 +1509,7 @@ func main() {
 		}
 	}
 
-	gen := types.NewGenerator(os.Stdout, types.Chaotic, allFams).WithStepDuration(2 * time.Minute).WithGaugeVariance(1.0)
+	gen := types.NewGenerator(os.Stdout, types.Chaotic, instance, jobName, allFams).WithStepDuration(2 * time.Minute).WithGaugeVariance(1.0)
 
 	gen.WriteOpenMetrics(done, time.Now().Add(-12*time.Hour), time.Now().Add(-2*time.Hour))
 
