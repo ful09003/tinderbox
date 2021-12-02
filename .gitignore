@@ -16,3 +16,6 @@
 
 # Byeeeeee VSCode
 .vscode
+
+playground/tsdb_out
+playground/hm

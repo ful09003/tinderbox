@@ -59,10 +59,12 @@ func (h *TinderboxHTTPOptions) ToRequest(url string) (*http.Request, error) {
 	}, nil
 }
 
+// Retries returns the TinderboxHTTPOption's retries integer
 func (h *TinderboxHTTPOptions) Retries() int {
 	return h.retries
 }
 
+// BackoffDelay returns the TinderboxHTTPOption's backoff delay integer
 func (h *TinderboxHTTPOptions) BackoffDelay() int {
 	return h.backoffDelay
 }
