@@ -18,7 +18,7 @@ type ScrapeJob struct {
 func NewScrapeJob(t string, o *types.TinderboxHTTPOptions) *ScrapeJob {
 	return &ScrapeJob{
 		target: t,
-		opts: o,
+		opts:   o,
 	}
 }
 
@@ -34,6 +34,7 @@ func (r *ScrapeResults) Families() map[string]*dto.MetricFamily {
 func (r *ScrapeResults) Error() error {
 	return r.err
 }
+
 // OpenMetricScrape takes a scrape job, a client, and output channel and writes the resulting ScrapeResults to outCh.
 // BUG(mfuller): This naming is incorrect, and should be updated to reflect that this is not truly OpenMetrics format, but rather Prometheus exposition format.
 func OpenMetricScrape(in *ScrapeJob, c http.Client) <-chan ScrapeResults {
@@ -46,14 +47,14 @@ func OpenMetricScrape(in *ScrapeJob, c http.Client) <-chan ScrapeResults {
 		if err != nil {
 			out <- ScrapeResults{
 				families: nil,
-				err: err,
+				err:      err,
 			}
 			return
 		}
 		f, e := Parse(scrapeBytes)
 		out <- ScrapeResults{
 			families: f,
-			err: e,
+			err:      e,
 		}
 	}()
 
@@ -62,7 +63,7 @@ func OpenMetricScrape(in *ScrapeJob, c http.Client) <-chan ScrapeResults {
 	/*var res ScrapeResults
 
 	scrapeBytes, err := Scrape(in.target, in.opts, c)
-	if err != nil { 
+	if err != nil {
 		res.err = err
 		outCh <- res
 		return

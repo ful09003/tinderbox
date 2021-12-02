@@ -1495,7 +1495,7 @@ func main() {
 
 	allFams := make([]*dto.MetricFamily, 0)
 
-	for sRes := range 	scrape.OpenMetricScrape(job,*http.DefaultClient) {
+	for sRes := range scrape.OpenMetricScrape(job, *http.DefaultClient) {
 		if sRes.Error() != nil {
 			log.Fatalln(sRes.Error())
 		}
@@ -1506,7 +1506,6 @@ func main() {
 
 	gen := types.NewGenerator(os.Stdout, types.Chaotic, allFams).WithStepDuration(2 * time.Minute).WithGaugeVariance(1.0)
 
-	gen.WriteOpenMetrics(done, time.Now().Add(- 12 * time.Hour), time.Now().Add(- 2 * time.Hour))		
+	gen.WriteOpenMetrics(done, time.Now().Add(-12*time.Hour), time.Now().Add(-2*time.Hour))
 
-		
 }

@@ -16,13 +16,13 @@ type GeneratorAlignmentFn func(<-chan struct{}, *dto.MetricFamily, time.Time, ti
 
 type GeneratorJob struct {
 	FamData *dto.MetricFamily
-	GenType GeneratorType 
+	GenType GeneratorType
 }
 
 type GeneratorType int
 
 func (g GeneratorType) String() string {
-	switch g{
+	switch g {
 	case Repeatable:
 		return "repeatable"
 	case Chaotic:
@@ -36,18 +36,18 @@ func (g GeneratorType) String() string {
 
 const (
 	Repeatable GeneratorType = iota // Repeatable represents a generator that never changes values per interval
-	Chaotic // Chaotic represents a generator that does change values per interval
-	Lossy // Lossy represents a generator that will selectively drop a series
+	Chaotic                         // Chaotic represents a generator that does change values per interval
+	Lossy                           // Lossy represents a generator that will selectively drop a series
 )
 
 // MetricsGenerator is a coordinating structure for generating "fake" OpenMetrics datasets.
 type MetricsGenerator struct {
-	alignment GeneratorType // alignment represents this generator's treatment of values
-	stepDuration time.Duration // stepDuration represents the interval between generated scrape times (e.g. 1 minute, 5 minutes, etc.)
-	seedData []*dto.MetricFamily // seedData represents the base data (ideally, via a live scrape) this generator uses
-	stepMaxVariance float64 // stepMaxVariance represents how the upper bound a given metric should change per interval
-	alignmentFn GeneratorAlignmentFn
-	
+	alignment       GeneratorType       // alignment represents this generator's treatment of values
+	stepDuration    time.Duration       // stepDuration represents the interval between generated scrape times (e.g. 1 minute, 5 minutes, etc.)
+	seedData        []*dto.MetricFamily // seedData represents the base data (ideally, via a live scrape) this generator uses
+	stepMaxVariance float64             // stepMaxVariance represents how the upper bound a given metric should change per interval
+	alignmentFn     GeneratorAlignmentFn
+
 	out io.Writer // out is the destination io.Writer for this generator
 }
 
@@ -72,9 +72,9 @@ func (m *MetricsGenerator) WithGaugeVariance(f float64) *MetricsGenerator {
 // NewGenerator returns a bare-bones metrics generator.
 func NewGenerator(o io.Writer, genType GeneratorType, seed []*dto.MetricFamily) *MetricsGenerator {
 	retGen := &MetricsGenerator{
-		out: o,
+		out:       o,
 		alignment: genType,
-		seedData: seed,
+		seedData:  seed,
 	}
 	switch retGen.alignment {
 	case Repeatable:
@@ -102,17 +102,17 @@ func (m *MetricsGenerator) WriteOpenMetrics(done <-chan struct{}, epoch, end tim
 // It does this for every tick of epoch + m.stepDuration, up to forDuration.
 // epoch is defined as the input variable of the same name.
 // For each MetricFamily in the generator's seed data, a fanout pattern is employed.
-func (m *MetricsGenerator) Generate(done <-chan struct{}, epoch, end time.Time) <-chan *dto.MetricFamily{
+func (m *MetricsGenerator) Generate(done <-chan struct{}, epoch, end time.Time) <-chan *dto.MetricFamily {
 	returnCh := make(chan *dto.MetricFamily)
 
 	var wg sync.WaitGroup
 
 	merge := func(c <-chan *dto.MetricFamily) {
 		defer wg.Done()
-		for c1 := range c{
+		for c1 := range c {
 			select {
 			case returnCh <- c1:
-			case <- done:
+			case <-done:
 				return
 			}
 		}
@@ -122,8 +122,8 @@ func (m *MetricsGenerator) Generate(done <-chan struct{}, epoch, end time.Time) 
 	for f := range yieldFams(m.seedData) {
 		go merge(m.alignmentFn(done, f, epoch, end, m.stepDuration, m))
 	}
-	
-	go func(){
+
+	go func() {
 		wg.Wait()
 		close(returnCh)
 	}()
@@ -148,7 +148,7 @@ func yieldFams(f []*dto.MetricFamily) <-chan *dto.MetricFamily {
 func chaoticMetricValues(done <-chan struct{}, in *dto.MetricFamily, epoch, end time.Time, step time.Duration, m *MetricsGenerator) <-chan *dto.MetricFamily {
 	out := make(chan *dto.MetricFamily)
 
-	go func(){
+	go func() {
 		defer close(out)
 		nTime := epoch
 
@@ -160,18 +160,18 @@ func chaoticMetricValues(done <-chan struct{}, in *dto.MetricFamily, epoch, end 
 
 			if in.GetType() != dto.MetricType_GAUGE {
 				out <- &dto.MetricFamily{
-					Name: in.Name,
-					Help: in.Help,
-					Type: in.Type,
-					Metric: modifyMetrics(in.Metric, nTime), 
+					Name:   in.Name,
+					Help:   in.Help,
+					Type:   in.Type,
+					Metric: modifyMetrics(in.Metric, nTime),
 				}
-			} else{
+			} else {
 				out <- &dto.MetricFamily{
-					Name: in.Name,
-					Help: in.Help,
-					Type: in.Type,
+					Name:   in.Name,
+					Help:   in.Help,
+					Type:   in.Type,
 					Metric: adjustVals(modifyMetrics(in.Metric, nTime), m.stepMaxVariance, 0.9),
-				}	
+				}
 			}
 		}
 	}()
@@ -205,7 +205,7 @@ func adjustVals(in []*dto.Metric, r, prob float64) []*dto.Metric {
 func repeatMetricFam(done <-chan struct{}, in *dto.MetricFamily, epoch, end time.Time, step time.Duration, g *MetricsGenerator) <-chan *dto.MetricFamily {
 	out := make(chan *dto.MetricFamily)
 
-	go func(){
+	go func() {
 		defer close(out)
 		nTime := epoch
 
@@ -216,9 +216,9 @@ func repeatMetricFam(done <-chan struct{}, in *dto.MetricFamily, epoch, end time
 
 			nTime = nTime.Add(step)
 			out <- &dto.MetricFamily{
-				Name: in.Name,
-				Help: in.Help,
-				Type: in.Type,
+				Name:   in.Name,
+				Help:   in.Help,
+				Type:   in.Type,
 				Metric: modifyMetrics(in.Metric, nTime),
 			}
 		}
@@ -242,16 +242,16 @@ func modifyMetrics(in []*dto.Metric, t time.Time) []*dto.Metric {
 }
 
 // setTimestamp sets a Metric's TimestampMs to the provided input Time.
-// On Golang>=1.17, the division used may be done away with in lieu of 
+// On Golang>=1.17, the division used may be done away with in lieu of
 // http://docs.studygolang.com/pkg/time/#UnixMilli
 func setTimestamp(onMetric *dto.Metric, t time.Time) dto.Metric {
 	return dto.Metric{
-		Label: onMetric.Label,
-		Gauge: onMetric.Gauge,
-		Counter: onMetric.Counter,
-		Summary: onMetric.Summary,
-		Untyped: onMetric.Untyped,
-		Histogram: onMetric.Histogram,
+		Label:       onMetric.Label,
+		Gauge:       onMetric.Gauge,
+		Counter:     onMetric.Counter,
+		Summary:     onMetric.Summary,
+		Untyped:     onMetric.Untyped,
+		Histogram:   onMetric.Histogram,
 		TimestampMs: proto.Int64(t.UnixNano() / int64(time.Millisecond)),
 	}
 }
@@ -261,22 +261,22 @@ func setReqdLabels(onMetric *dto.Metric, job, instance string) dto.Metric {
 	origLabels := onMetric.Label
 	origLabels = append(origLabels,
 		&dto.LabelPair{
-			Name: proto.String("job"),
+			Name:  proto.String("job"),
 			Value: proto.String(job),
 		},
 		&dto.LabelPair{
-			Name: proto.String("instance"),
+			Name:  proto.String("instance"),
 			Value: proto.String(instance),
 		},
 	)
 
 	return dto.Metric{
-		Label: origLabels,
-		Gauge: onMetric.Gauge,
-		Counter: onMetric.Counter,
-		Summary: onMetric.Summary,
-		Untyped: onMetric.Untyped,
-		Histogram: onMetric.Histogram,
+		Label:       origLabels,
+		Gauge:       onMetric.Gauge,
+		Counter:     onMetric.Counter,
+		Summary:     onMetric.Summary,
+		Untyped:     onMetric.Untyped,
+		Histogram:   onMetric.Histogram,
 		TimestampMs: onMetric.TimestampMs,
 	}
 }

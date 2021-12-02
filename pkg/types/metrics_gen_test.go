@@ -137,7 +137,7 @@ func Test_setReqdLabels(t *testing.T) {
 }
 
 func Test_setTimestamp(t *testing.T) {
-	testTime, err := time.Parse("2006-01-02","2021-12-01")
+	testTime, err := time.Parse("2006-01-02", "2021-12-01")
 	if err != nil {
 		t.Error(err)
 	}

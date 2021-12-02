@@ -71,7 +71,7 @@ func TestOpenMetricScrape(t *testing.T) {
 				if !reflect.DeepEqual(got.Families(), tt.want.families) {
 					t.Errorf("OpenMetricScrape() = %v, want %v", got, tt.want)
 					return
-				}	
+				}
 			}
 		})
 	}
