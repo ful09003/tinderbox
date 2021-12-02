@@ -1,7 +1,9 @@
 package main
 
 import (
+	"log"
 	"math/rand"
+	"net/http"
 	"os"
 	"time"
 
@@ -1489,19 +1491,22 @@ func main() {
 	done := make(chan struct{})
 	defer close(done)
 
-	fams, err := scrape.Parse([]byte(nodeExporterData))
-	if err != nil {
-		panic(err)
-	}
+	job := scrape.NewScrapeJob("http://localhost:9100/metrics", types.NewTinderboxHTTPOptions())
 
 	allFams := make([]*dto.MetricFamily, 0)
 
-	for _, v := range fams {
-		allFams = append(allFams, v)
+	for sRes := range 	scrape.OpenMetricScrape(job,*http.DefaultClient) {
+		if sRes.Error() != nil {
+			log.Fatalln(sRes.Error())
+		}
+		for _, v := range sRes.Families() {
+			allFams = append(allFams, v)
+		}
 	}
 
-	gen := types.NewGenerator(os.Stdout, types.Chaotic, allFams).WithStepDuration(1 * time.Minute).WithGaugeVariance(1.0)
+	gen := types.NewGenerator(os.Stdout, types.Chaotic, allFams).WithStepDuration(2 * time.Minute).WithGaugeVariance(1.0)
 
-	gen.WriteOpenMetrics(done, time.Now().Add(- 12 * time.Hour), time.Now().Add(- 2 * time.Hour))
+	gen.WriteOpenMetrics(done, time.Now().Add(- 12 * time.Hour), time.Now().Add(- 2 * time.Hour))		
+
 		
 }

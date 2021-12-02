@@ -63,15 +63,15 @@ func TestOpenMetricScrape(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			OpenMetricScrape(tt.args.in, tt.args.c, tt.args.outCh)
-			got := <-tt.args.outCh
-			if (got.err != nil) != tt.wantErr {
-				t.Errorf("OpenMetricScrape() error = %v, wantErr %v", got.err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got.families, tt.want.families) {
-				t.Errorf("OpenMetricScrape() = %v, want %v", got, tt.want)
-				return
+			for got := range OpenMetricScrape(tt.args.in, tt.args.c) {
+				if (got.Error() != nil) != tt.wantErr {
+					t.Errorf("OpenMetricScrape() error = %v, wantErr %v", got.err, tt.wantErr)
+					return
+				}
+				if !reflect.DeepEqual(got.Families(), tt.want.families) {
+					t.Errorf("OpenMetricScrape() = %v, want %v", got, tt.want)
+					return
+				}	
 			}
 		})
 	}

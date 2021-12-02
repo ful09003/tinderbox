@@ -170,7 +170,7 @@ func chaoticMetricValues(done <-chan struct{}, in *dto.MetricFamily, epoch, end 
 					Name: in.Name,
 					Help: in.Help,
 					Type: in.Type,
-					Metric: adjustVals(modifyMetrics(in.Metric, nTime), m.stepMaxVariance, 0.1),
+					Metric: adjustVals(modifyMetrics(in.Metric, nTime), m.stepMaxVariance, 0.9),
 				}	
 			}
 		}
