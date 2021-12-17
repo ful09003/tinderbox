@@ -37,9 +37,9 @@ const (
 
 // MetricsGenerator is a coordinating structure for generating "fake" OpenMetrics datasets.
 type MetricsGenerator struct {
-	alignment       GeneratorType       // alignment represents this generator's treatment of values
-	instanceName string // Faked instance name
-	jobName string // Faked job name
+	alignment       GeneratorType       // alignment represents this generator's treatment of metrics
+	instanceName    string              // Generated instance name
+	jobName         string              // Generated job name
 	stepDuration    time.Duration       // stepDuration represents the interval between generated scrape times (e.g. 1 minute, 5 minutes, etc.)
 	seedData        []*dto.MetricFamily // seedData represents the base data (ideally, via a live scrape) this generator uses
 	stepMaxVariance float64             // stepMaxVariance represents how the upper bound a given metric should change per interval
@@ -48,7 +48,7 @@ type MetricsGenerator struct {
 	out io.Writer // out is the destination io.Writer for this generator
 }
 
-// GetAlignment sets a generator's alignment. If already set, this is a noop
+// GetAlignment gets a generator's alignment.
 func (m *MetricsGenerator) GetAlignment() string {
 	return m.alignment.String()
 }
@@ -69,11 +69,11 @@ func (m *MetricsGenerator) WithGaugeVariance(f float64) *MetricsGenerator {
 // NewGenerator returns a bare-bones metrics generator.
 func NewGenerator(o io.Writer, genType GeneratorType, targetName, jobName string, seed []*dto.MetricFamily) *MetricsGenerator {
 	retGen := &MetricsGenerator{
-		out:       o,
-		alignment: genType,
-		seedData:  seed,
+		out:          o,
+		alignment:    genType,
+		seedData:     seed,
 		instanceName: targetName,
-		jobName: jobName,
+		jobName:      jobName,
 	}
 	switch retGen.alignment {
 	case Repeatable:
@@ -98,7 +98,7 @@ func (m *MetricsGenerator) WriteOpenMetrics(done <-chan struct{}, epoch, end tim
 }
 
 // Generate provides a return channel representing generated MetricFamilies.
-// It does this for every tick of epoch + m.stepDuration, up to forDuration.
+// It does this for every tick of epoch + m.stepDuration, up to end.
 // epoch is defined as the input variable of the same name.
 // For each MetricFamily in the generator's seed data, a fanout pattern is employed.
 func (m *MetricsGenerator) Generate(done <-chan struct{}, epoch, end time.Time) <-chan *dto.MetricFamily {
@@ -130,6 +130,7 @@ func (m *MetricsGenerator) Generate(done <-chan struct{}, epoch, end time.Time) 
 	return returnCh
 }
 
+// yieldFams converts a slice of MetricFamily data into a return channel
 func yieldFams(f []*dto.MetricFamily) <-chan *dto.MetricFamily {
 	out := make(chan *dto.MetricFamily)
 
